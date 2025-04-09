@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Map Polygon Editor</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="controls">
+            <h1>Map Polygon Editor</h1>
+            <div class="layer-control">
+                <h3>Base Layers</h3>
+                <select id="baseLayer">
+                    <option value="osm">OpenStreetMap</option>
+                    <option value="satellite">Satellite</option>
+                </select>
+            </div>
+            <div class="custom-tile">
+                <h3>Custom Tile Server</h3>
+                <input type="text" id="tileUrl" placeholder="Enter tile server URL">
+                <button onclick="addCustomTileLayer()">Add Layer</button>
+            </div>
+            <div class="polygon-control">
+                <h3>Polygon Management</h3>
+                <button onclick="savePolygons()">Download Polygons</button>
+                <button onclick="document.getElementById('loadPolygonsFile').click()">Load Polygons</button>
+                <input type="file" id="loadPolygonsFile" accept=".json" style="display: none" onchange="loadPolygons(event)">
+                <button onclick="clearPolygons()">Clear All</button>
+            </div>
+        </div>
+        <div id="map"></div>
+    </div>
+
+    <!-- Polygon Metadata Modal -->
+    <div id="metadataModal" class="modal">
+        <div class="modal-content">
+            <h2>Polygon Details</h2>
+            <form id="polygonMetadataForm">
+                <div class="form-group">
+                    <label for="polygonName">Name:</label>
+                    <input type="text" id="polygonName" required>
+                </div>
+                <div class="form-group">
+                    <label for="polygonType">Type:</label>
+                    <select id="polygonType" required>
+                        <option value="residential">Residential</option>
+                        <option value="commercial">Commercial</option>
+                        <option value="industrial">Industrial</option>
+                        <option value="agricultural">Agricultural</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="polygonColor">Color:</label>
+                    <input type="color" id="polygonColor" value="#2196F3" required>
+                </div>
+                <div class="form-group">
+                    <label for="polygonDescription">Description:</label>
+                    <textarea id="polygonDescription" rows="3"></textarea>
+                </div>
+                <div class="form-buttons">
+                    <button type="submit">Create Polygon</button>
+                    <button type="button" onclick="cancelPolygonCreation()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- Custom JS -->
+    <script src="js/main.js"></script>
+</body>
+</html> 
