@@ -32,11 +32,47 @@
                 <h3>Polygon Management</h3>
                 <button onclick="savePolygons()">Download Polygons</button>
                 <button onclick="document.getElementById('loadPolygonsFile').click()">Load Polygons</button>
-                <input type="file" id="loadPolygonsFile" accept=".json" style="display: none" onchange="loadPolygons(event)">
+                <input type="file" id="loadPolygonsFile" accept=".json,.geojson" style="display: none" onchange="loadPolygons(event)">
                 <button onclick="clearPolygons()">Clear All</button>
             </div>
         </div>
         <div id="map"></div>
+        <div id="detailsPanel" class="details-panel">
+            <div class="details-header">
+                <h3>Polygon Details</h3>
+                <button class="close-button" onclick="hideDetailsPanel()">×</button>
+            </div>
+            <div class="details-content">
+                <form id="polygonDetailsForm">
+                    <div class="form-group">
+                        <label for="detailsName">Name:</label>
+                        <input type="text" id="detailsName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="detailsType">Type:</label>
+                        <select id="detailsType" required>
+                            <option value="residential">Residential</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="industrial">Industrial</option>
+                            <option value="agricultural">Agricultural</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="detailsColor">Color:</label>
+                        <input type="color" id="detailsColor" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="detailsDescription">Description:</label>
+                        <textarea id="detailsDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-buttons">
+                        <button type="submit">Save Changes</button>
+                        <button type="button" onclick="deleteSelectedPolygon()">Delete Polygon</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     <!-- Polygon Metadata Modal -->

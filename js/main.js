@@ -106,6 +106,9 @@ map.on('draw:created', function(e) {
     // Add to feature group
     drawnItems.addLayer(layer);
     
+    // Add interactions to the new polygon
+    addPolygonInteractions(layer);
+    
     // Reset drawing state
     currentMetadata = null;
     drawingEnabled = false;
@@ -161,33 +164,42 @@ form.addEventListener('submit', function(e) {
     new L.Draw.Polygon(map, drawControl.options.draw.polygon).enable();
 });
 
-// Save polygons to JSON file
+// Save polygons to GeoJSON file
 function savePolygons() {
-    const polygons = [];
+    const features = [];
     drawnItems.eachLayer(layer => {
         if (layer instanceof L.Polygon) {
-            const coords = layer.getLatLngs()[0].map(latLng => [latLng.lat, latLng.lng]);
-            polygons.push({
-                coords: coords,
-                metadata: layer.metadata || {}
+            const coords = layer.getLatLngs()[0].map(latLng => [latLng.lng, latLng.lat]); // GeoJSON uses [lng, lat]
+            features.push({
+                type: 'Feature',
+                geometry: {
+                    type: 'Polygon',
+                    coordinates: [coords]
+                },
+                properties: layer.metadata || {}
             });
         }
     });
 
-    if (polygons.length === 0) {
+    if (features.length === 0) {
         alert('No polygons to save!');
         return;
     }
 
-    // Create JSON file
-    const jsonStr = JSON.stringify(polygons, null, 2);
+    const geojson = {
+        type: 'FeatureCollection',
+        features: features
+    };
+
+    // Create GeoJSON file
+    const jsonStr = JSON.stringify(geojson, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     
     // Create download link
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'polygons.json';
+    a.download = 'polygons.geojson';
     document.body.appendChild(a);
     a.click();
     
@@ -196,7 +208,7 @@ function savePolygons() {
     URL.revokeObjectURL(url);
 }
 
-// Load polygons from JSON file
+// Load polygons from GeoJSON file
 function loadPolygons(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -204,31 +216,38 @@ function loadPolygons(event) {
     const reader = new FileReader();
     reader.onload = function(e) {
         try {
-            const polygons = JSON.parse(e.target.result);
+            const geojson = JSON.parse(e.target.result);
             
-            if (!Array.isArray(polygons)) {
-                throw new Error('Invalid JSON format: expected an array');
+            if (geojson.type !== 'FeatureCollection' || !Array.isArray(geojson.features)) {
+                throw new Error('Invalid GeoJSON format');
             }
 
             // Clear existing polygons if any exist
             drawnItems.clearLayers();
 
-            polygons.forEach(data => {
-                if (!data.coords) {
-                    console.warn('Skipping invalid polygon data:', data);
+            geojson.features.forEach(feature => {
+                if (feature.geometry.type !== 'Polygon') {
+                    console.warn('Skipping non-polygon feature:', feature);
                     return;
                 }
 
-                const polygon = L.polygon(data.coords, {
-                    color: data.metadata?.color || '#2196F3',
-                    fillColor: data.metadata?.color || '#2196F3'
+                // Convert GeoJSON coordinates to Leaflet format
+                const coords = feature.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+                
+                const polygon = L.polygon(coords, {
+                    color: feature.properties.color || '#2196F3',
+                    fillColor: feature.properties.color || '#2196F3'
                 });
-                polygon.metadata = data.metadata || {};
+                
+                polygon.metadata = feature.properties;
                 drawnItems.addLayer(polygon);
+                
+                // Add hover and click events
+                addPolygonInteractions(polygon);
             });
 
             // Fit map to show all polygons
-            if (polygons.length > 0) {
+            if (geojson.features.length > 0) {
                 map.fitBounds(drawnItems.getBounds());
             }
         } catch (error) {
@@ -245,6 +264,92 @@ function loadPolygons(event) {
     // Reset file input so the same file can be loaded again
     event.target.value = '';
 }
+
+// Add interactions to a polygon
+function addPolygonInteractions(polygon) {
+    let tooltip = null;
+    
+    // Show tooltip on hover
+    polygon.on('mouseover', function(e) {
+        const metadata = polygon.metadata || {};
+        tooltip = L.tooltip({
+            direction: 'top',
+            permanent: false
+        })
+        .setContent(`
+            <strong>${metadata.name || 'Unnamed Polygon'}</strong><br>
+            Type: ${metadata.type || 'N/A'}<br>
+            Click to edit
+        `)
+        .setLatLng(e.latlng)
+        .openOn(map);
+    });
+
+    // Remove tooltip on mouseout
+    polygon.on('mouseout', function() {
+        if (tooltip) {
+            map.closeTooltip(tooltip);
+            tooltip = null;
+        }
+    });
+
+    // Show details panel on click
+    polygon.on('click', function() {
+        showPolygonDetails(polygon);
+    });
+}
+
+// Show polygon details in the side panel
+function showPolygonDetails(polygon) {
+    const metadata = polygon.metadata || {};
+    document.getElementById('detailsName').value = metadata.name || '';
+    document.getElementById('detailsType').value = metadata.type || 'residential';
+    document.getElementById('detailsColor').value = metadata.color || '#2196F3';
+    document.getElementById('detailsDescription').value = metadata.description || '';
+    
+    // Store reference to the selected polygon
+    window.selectedPolygon = polygon;
+    
+    // Show the details panel
+    document.getElementById('detailsPanel').classList.add('visible');
+}
+
+// Hide the details panel
+function hideDetailsPanel() {
+    document.getElementById('detailsPanel').classList.remove('visible');
+    window.selectedPolygon = null;
+}
+
+// Delete the selected polygon
+function deleteSelectedPolygon() {
+    if (window.selectedPolygon) {
+        drawnItems.removeLayer(window.selectedPolygon);
+        hideDetailsPanel();
+    }
+}
+
+// Handle details form submission
+document.getElementById('polygonDetailsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    if (window.selectedPolygon) {
+        const metadata = {
+            name: document.getElementById('detailsName').value,
+            type: document.getElementById('detailsType').value,
+            color: document.getElementById('detailsColor').value,
+            description: document.getElementById('detailsDescription').value
+        };
+        
+        // Update polygon metadata and style
+        window.selectedPolygon.metadata = metadata;
+        window.selectedPolygon.setStyle({
+            color: metadata.color,
+            fillColor: metadata.color
+        });
+        
+        hideDetailsPanel();
+    }
+});
 
 // Clear all polygons
 function clearPolygons() {

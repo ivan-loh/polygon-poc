@@ -84,6 +84,59 @@ button:hover {
     height: 100%;
 }
 
+/* Details Panel Styles */
+.details-panel {
+    position: fixed;
+    right: -400px;
+    top: 0;
+    width: 400px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: right 0.3s ease;
+    z-index: 1000;
+}
+
+.details-panel.visible {
+    right: 0;
+}
+
+.details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+.details-header h3 {
+    margin: 0;
+}
+
+.close-button {
+    width: auto;
+    padding: 5px 10px;
+    background-color: #f44336;
+}
+
+.close-button:hover {
+    background-color: #d32f2f;
+}
+
+.details-content {
+    padding: 20px;
+}
+
+/* Hover Tooltip */
+.leaflet-tooltip {
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
 /* Modal Styles */
 .modal {
     display: none;
